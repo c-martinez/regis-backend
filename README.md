@@ -9,3 +9,9 @@ Start server:
 ```
 python server.py
 ```
+
+Start and populate MongoDB:
+```
+docker run --name geovis_mongo --rm -d -p 27017:27017 mongo
+python populateLayers.py
+```

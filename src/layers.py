@@ -1,19 +1,23 @@
-
-from flask import jsonify, request
-from flask_restplus import Namespace, Resource, fields
+from flask import jsonify
+from flask_restplus import Namespace, Resource, reqparse
+import werkzeug
 
 from datahandler import LayerDataManager
+from davhandler import WebDavHandler
+from config import globalconfig
 
 ns = Namespace("layers", description="Regis layers service", validate=True)
 
-singleLayerDef = ns.model("SingleLayerDefinition", {
-    "id": fields.String(description="resource ID", required=True),
-    "type": fields.String(description="Type of layer", required=True),
-    "name": fields.String(description="Name of the layer", required=True),
-    "visible": fields.Boolean(description="Layer visibility", required=True),
-})
+parser = reqparse.RequestParser()
+parser.add_argument("id", help="resource ID", required=True, location='form')
+parser.add_argument("type", help="Type of layer", required=True, location='form',
+    choices=globalconfig['layerTypes'])
+parser.add_argument("name", help="Name of the layer", required=True, location='form')
+parser.add_argument("visible", help="Layer visibility", required=True, location='form', type=bool)
+parser.add_argument("file", help="Attached file", required=False, location="files", type=werkzeug.datastructures.FileStorage)
 
 layerManager = LayerDataManager()
+davHandler = WebDavHandler()
 
 @ns.route("/")
 class Layers(Resource):
@@ -21,19 +25,27 @@ class Layers(Resource):
         '''List all layers'''
         layers = layerManager.getLayers()
         defs = {
-            "name": "GV-webportal layers",
-            "version": "0.1",
+            "name": globalconfig['name'],
+            "version": globalconfig['version'],
             "layers": layers
         }
         return jsonify(defs)
 
-
 @ns.route("/add/")
 class LayerAdd(Resource):
-    @ns.expect(singleLayerDef, valudate=True)
+    @ns.expect(parser, validate=True)
     def post(self):
         '''Add new layer'''
-        layer = request.get_json()
+        args = parser.parse_args()
+
+        myFile = args['file']
+        del args['file']
+        layer = args
+
+        # if myFile is not None -- upload it to webdav and get a URL for it.
+        if myFile:
+            layer['url'] = davHandler.uploadFile(myFile)
+
         layerManager.saveLayer(layer)
         defs = { "status": "ok" }
         return jsonify(defs)

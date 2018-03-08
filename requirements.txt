@@ -15,3 +15,6 @@ pytz==2018.3
 six==1.11.0
 Werkzeug==0.14.1
 WsgiDAV==2.2.4
+pycurl==7.19.5.1 --global-option="--with-nss"
+webdavclient==1.0.8
+

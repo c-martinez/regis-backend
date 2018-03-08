@@ -1,5 +1,6 @@
 from pymongo import MongoClient
-from configparser import SafeConfigParser
+
+from config import mongoconfig
 
 # Mongo filters and projections
 FIND_ALL = {}
@@ -7,17 +8,12 @@ IGNORE_MONGO_ID = {"_id": 0} # Do not return field _id
 
 class LayerDataManager:
     def __init__(self):
-        config = SafeConfigParser()
-        config.read('regis-config.ini')
-        mongo_host = config.get('mongo', 'host')
-        mongo_port = config.getint('mongo', 'port')
-        mongo_user = config.get('mongo', 'username', fallback=None)
-        mongo_pass = config.get('mongo', 'password', fallback=None)
-        db_name = config.get('mongo', 'database')
-        collection_name = config.get('mongo', 'collection')
-
-        print({"host": mongo_host, "port": mongo_port,
-            "username": mongo_user, "password": mongo_pass})
+        mongo_host = mongoconfig['host']
+        mongo_port = mongoconfig['port']
+        mongo_user = mongoconfig['user']
+        mongo_pass = mongoconfig['pass']
+        db_name = mongoconfig['db']
+        collection_name = mongoconfig['collection']
 
         client = MongoClient(host=mongo_host, port=mongo_port, username=mongo_user, password=mongo_pass)
         db = client[db_name]

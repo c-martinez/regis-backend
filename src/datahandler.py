@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+from bson import ObjectId
 
 from config import mongoconfig
 
@@ -20,8 +21,22 @@ class LayerDataManager:
         self.collection = db[collection_name]
 
     def getLayers(self):
+        '''Returns all existing layers saved on MongoDB.'''
         layerCursor = self.collection.find(filter=FIND_ALL, projection=IGNORE_MONGO_ID)
         return [layer for layer in layerCursor]
 
     def saveLayer(self, layer):
+        '''Create a new layer on MongoDB. An ID is generated for this layer.
+        The newly created layer is returned'''
+
+        if 'center' in layer and layer['center']:
+            # Specific for circle layers
+            c = layer['center'].split(',')
+            layer['center'] = [ float(ci) for ci in c ]
+
+        newId = str(ObjectId())
+        layer['id'] = newId
+        layer['_id'] = newId
         self.collection.insert_one(layer)
+        del layer['_id']
+        return layer

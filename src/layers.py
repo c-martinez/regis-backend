@@ -9,12 +9,15 @@ from config import globalconfig
 ns = Namespace("layers", description="Regis layers service", validate=True)
 
 parser = reqparse.RequestParser()
-parser.add_argument("id", help="resource ID", required=True, location='form')
 parser.add_argument("type", help="Type of layer", required=True, location='form',
     choices=globalconfig['layerTypes'])
 parser.add_argument("name", help="Name of the layer", required=True, location='form')
-parser.add_argument("visible", help="Layer visibility", required=True, location='form', type=bool)
+parser.add_argument("active", help="Layer visibility", required=True, location='form', type=bool)
 parser.add_argument("file", help="Attached file", required=False, location="files", type=werkzeug.datastructures.FileStorage)
+
+# Additional parameters only present for circular layers
+parser.add_argument("center", help="Circular layer center", required=False, location='form')
+parser.add_argument("radius", help="Circular layer radius", required=False, location='form', type=float)
 
 layerManager = LayerDataManager()
 davHandler = WebDavHandler()
@@ -46,6 +49,7 @@ class LayerAdd(Resource):
         if myFile:
             layer['url'] = davHandler.uploadFile(myFile)
 
-        layerManager.saveLayer(layer)
-        defs = { "status": "ok" }
+        savedLayer = layerManager.saveLayer(layer)
+        defs = { "status": "ok",
+                  "layer": savedLayer }
         return jsonify(defs)

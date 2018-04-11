@@ -2,6 +2,10 @@ from flask import jsonify
 from flask_restplus import Namespace, Resource, reqparse
 import werkzeug
 
+import json
+import requests
+from itertools import chain
+
 from datahandler import LayerDataManager
 from davhandler import WebDavHandler
 from config import globalconfig
@@ -53,3 +57,30 @@ class LayerAdd(Resource):
         defs = { "status": "ok",
                   "layer": savedLayer }
         return jsonify(defs)
+
+infoParser = reqparse.RequestParser()
+infoParser.add_argument('id', required=True, location='args')
+@ns.route("/info/")
+class LayerInfo(Resource):
+    @ns.expect(infoParser)
+    def get(self):
+        '''List columns for geojson file'''
+        args = infoParser.parse_args()
+
+        id = args['id']
+        layer = layerManager.getLayer(id)
+        if layer:
+            if layer['type'] == 'geojson':
+                url = layer['url']
+                geojson = requests.get(url).json()
+                propSet = [ set(feature['properties'].keys()) for feature in geojson['features']]
+                properties = list(set(chain.from_iterable(propSet)))
+                response = { "status": "ok",
+                      "columns": properties }
+            else:
+                response = { "status": "error",
+                         "message": "No information retrievable from this type of layer" }
+        else:
+            response = { "status": "error",
+                     "message": "Layer not found" }
+        return jsonify(response)

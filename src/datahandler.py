@@ -25,6 +25,13 @@ class LayerDataManager:
         layerCursor = self.collection.find(filter=FIND_ALL, projection=IGNORE_MONGO_ID)
         return [layer for layer in layerCursor]
 
+    def getLayer(self, id):
+        '''Returns layer saved on MongoDB with given ID.'''
+        layerCursor = self.collection.find(filter={'id': id}, projection=IGNORE_MONGO_ID)
+        layers = [layer for layer in layerCursor]
+        assert len(layers)<=1, 'Too many layers with the same ID!'
+        return layers[0] if len(layers) == 1 else None
+
     def saveLayer(self, layer):
         '''Create a new layer on MongoDB. An ID is generated for this layer.
         The newly created layer is returned'''
